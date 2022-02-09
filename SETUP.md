@@ -38,5 +38,6 @@ if __name__ == "__main__":
 `uwsgi -s /tmp/yourapplication.sock --manage-script-name --mount /flickr-oauth=flickr-oauth:app --uid=33 --gid=33 uwsgi.ini`
  (or wsgi:app, feel free to fix this!)
 
-Next step: run as system service or under supervisord, e.g.
+# TODO
+run as system service or under supervisord, e.g.
 https://www.devdungeon.com/content/run-python-wsgi-web-app-waitress
