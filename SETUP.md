@@ -1,6 +1,6 @@
 # Install dependencies
 
-apt install uwsgi uwsgi-plugin-python3
+`apt install uwsgi uwsgi-plugin-python3`
 
 # Setup nginx
 ```
