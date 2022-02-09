@@ -4,13 +4,12 @@ import webbrowser
 
 from flask import Flask
 
-FLICKR_API_KEY=os.environ['API_KEY']
-FLICKR_API_SECRET=os.environ['API_SECRET']
-
-f = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_API_SECRET, store_token=False)
+#FLICKR_API_KEY=os.environ['API_KEY']
+#FLICKR_API_SECRET=os.environ['API_SECRET']
 
 def create_app(test_config=None):
     # create and configure the app
+
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
@@ -23,6 +22,8 @@ def create_app(test_config=None):
         # load the test config if passed in
         app.config.from_mapping(test_config)
 
+    #f = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_API_SECRET, store_token=False)
+    f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], store_token=False)
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
@@ -34,7 +35,7 @@ def create_app(test_config=None):
     def hello():
         # if not authenticated, go through the OAuth flow
         # else
-        AUTH=False
+        AUTH=True
         if not AUTH:
             f.authenticate_via_browser(perms='read')
             pass 
