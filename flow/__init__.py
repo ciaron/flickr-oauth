@@ -3,6 +3,7 @@ import flickrapi
 import webbrowser
 
 from flask import Flask
+from flask import url_for, redirect, request, session
 
 #FLICKR_API_KEY=os.environ['API_KEY']
 #FLICKR_API_SECRET=os.environ['API_SECRET']
@@ -23,7 +24,7 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
 
     #f = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_API_SECRET, store_token=False)
-    f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], store_token=False)
+    #f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], store_token=False)
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
@@ -32,37 +33,59 @@ def create_app(test_config=None):
 
     # a simple page that says hello
     @app.route('/')
-    def hello():
+    def index():
         # if not authenticated, go through the OAuth flow
         # else
-        AUTH=True
-        if not AUTH:
-            f.authenticate_via_browser(perms='read')
-            pass 
-        else:
-            return 'Hello, authenticated user!'
-
-        # out-of-band flow
-        #if not f.token_valid(perms='read'):
-        #    # Get a request token
-        #    f.get_request_token(oauth_callback='oob')
-
-        #    # Open a browser at the authentication URL. Do this however
-        #    # you want, as long as the user visits that URL.
-        #    authorize_url = f.auth_url(perms='read')
-        #    webbrowser.open_new_tab(authorize_url)
-
-        #    # Get the verifier code from the user. Do this however you
-        #    # want, as long as the user gives the application the code.
-        #    verifier = str(input('Verifier code: '))
-
-        #    # Trade the request token for an access token
-        #    f.get_access_token(verifier)
+        #AUTH=False
+        #if not AUTH:
+        #    #f.authenticate_via_browser(perms='read')
+        #    f.get_request_token()
+        #    url = f.auth_url(perms='read')
+        #    return (url_for('index'))
         #else:
-        #    return 'Hello, authenticated user!'
+        #    return 'Hello!'
+        return 'Hello!'
+
+    @app.route('/login')
+    def login():
+        #f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], store_token=False, token_cache_location='/tmp/.flickr')
+        f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], token_cache_location='/tmp/.flickr')
+        if f.token_valid(perms='read'):
+            # Already logged in
+            print('Already logged in, redirecting to index.')
+            return redirect(url_for('index'))
+
+        # Get the request token
+        callback = url_for('auth_ok', _external=True)
+        print('Getting request token with callback URL %s' % callback)
+        f.get_request_token(oauth_callback=callback)
+
+        authorize_url = f.auth_url(perms='read')
+
+        # Store it in the session, to use in auth_ok()
+        session['request_token'] = f.flickr_oauth.resource_owner_key
+        session['request_token_secret'] = f.flickr_oauth.resource_owner_secret
+        session['requested_permissions'] = f.flickr_oauth.requested_permissions
+        print(session)
+
+        print('Redirecting to %s.' % authorize_url)
+        return redirect(authorize_url)
+
+    @app.route('/auth_ok')
+    def auth_ok():
+        #f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], store_token=False, token_cache_location='/tmp/.flickr')
+        f = flickrapi.FlickrAPI(app.config['FLICKR_API_KEY'], app.config['FLICKR_API_SECRET'], token_cache_location='/tmp/.flickr')
+        f.flickr_oauth.resource_owner_key = session['request_token']
+        f.flickr_oauth.resource_owner_secret = session['request_token_secret']
+        f.flickr_oauth.requested_permissions = session['requested_permissions']
+        verifier = request.args['oauth_verifier']
+
+        print('Getting resource key')
+        f.get_access_token(verifier)
+        return 'Verifier is %s' % verifier
 
     @app.route('/callback')
-    def callback():
+    def callback(request):
 
         # https://localhost:16502/?oauth_token=72157720832530627-1d1c235a02d71a5f&oauth_verifier=c157aa47a3d7b349
         print(request)
